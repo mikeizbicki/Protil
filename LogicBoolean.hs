@@ -9,16 +9,7 @@ module LogicBoolean
 type TruthType = Double
 
 conjunction :: TruthType -> TruthType -> TruthType
-conjunn x y = x + (1-x)*y
-
-defaultTruthValue :: TruthType
-defaultTruthValue = 0.9
-
-truthOfInference :: TruthType
-truthOfInference = unity
-
-unity :: TruthType
-unity = 1ction x y = x*y
+conjunction x y = x + (1-x)*y
 
 disjunction :: TruthType -> TruthType -> TruthType
 disjunction x y = x + (1-x)*y

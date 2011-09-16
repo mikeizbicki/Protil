@@ -5,63 +5,58 @@ module LogicBoolean
     , unity, disunity
     ) where
 
+-- generic definitions
 
-type TruthType = Double
-
+data TruthType = TT_Boolean String 
+               | TT_Maybe String 
+               | TT_Percent Double
+    deriving (Eq, Show)
+    
 conjunction :: TruthType -> TruthType -> TruthType
-conjunction x y = x + (1-x)*y
-
 disjunction :: TruthType -> TruthType -> TruthType
-disjunction x y = x + (1-x)*y
+unity :: TruthType
+disunity :: TruthType
 
 defaultTruthValue :: TruthType
-defaultTruthValue = 0.9
+defaultTruthValue = unity
 
 truthOfInference :: TruthType
 truthOfInference = unity
 
-unity :: TruthType
-unity = 1
+-- TT_Percent
 
-disunity :: TruthType
-disunity = 0
+conjunction (TT_Percent x) (TT_Percent y) = TT_Percent (x + (1-x)*y)
 
+disjunction (TT_Percent x) (TT_Percent y) = TT_Percent (x + (1-x)*y)
 
-{-
-type TruthType = String
+unity = TT_Percent 1
 
-conjunction :: TruthType -> TruthType -> TruthType
--- conjunction _ _ = "t"
-conjunction "t" "t" = "t"
-conjunction "t" "f" = "f"
-conjunction "t" "m" = "m"
-conjunction "f" "t" = "f"
-conjunction "f" "f" = "f"
-conjunction "f" "m" = "f"
-conjunction "m" "t" = "t"
-conjunction "m" "f" = "f"
-conjunction "m" "m" = "m"
+disunity = TT_Percent 0
 
-disjunction :: TruthType -> TruthType -> TruthType
--- disjunction _  _ = "t"
-disjunction "t" "t" = "t"
-disjunction "t" "f" = "t"
-disjunction "t" "m" = "t"
-disjunction "f" "t" = "t"
-disjunction "f" "f" = "f"
-disjunction "f" "m" = "m"
-disjunction "m" "t" = "t"
-disjunction "m" "f" = "m"
-disjunction "m" "m" = "m"
+-- TT_Maybe
 
-defaultTruthValue :: TruthType
-defaultTruthValue = "t"
-
-unity :: TruthType
-unity = "t"
-
-disunity :: TruthType
-disunity = "f"-}
+-- conjunction (TT_Maybe "t") (TT_Maybe "t") = TT_Maybe "t"
+-- conjunction (TT_Maybe "t") (TT_Maybe "f") = TT_Maybe "f"
+-- conjunction (TT_Maybe "t") (TT_Maybe "m") = TT_Maybe "m"
+-- conjunction (TT_Maybe "f") (TT_Maybe "t") = TT_Maybe "f"
+-- conjunction (TT_Maybe "f") (TT_Maybe "f") = TT_Maybe "f"
+-- conjunction (TT_Maybe "f") (TT_Maybe "m") = TT_Maybe "f"
+-- conjunction (TT_Maybe "m") (TT_Maybe "t") = TT_Maybe "t"
+-- conjunction (TT_Maybe "m") (TT_Maybe "f") = TT_Maybe "f"
+-- conjunction (TT_Maybe "m") (TT_Maybe "m") = TT_Maybe "m"
+-- 
+-- disjunction (TT_Maybe "t") (TT_Maybe "t") = TT_Maybe "t"
+-- disjunction (TT_Maybe "t") (TT_Maybe "f") = TT_Maybe "t"
+-- disjunction (TT_Maybe "t") (TT_Maybe "m") = TT_Maybe "t"
+-- disjunction (TT_Maybe "f") (TT_Maybe "t") = TT_Maybe "t"
+-- disjunction (TT_Maybe "f") (TT_Maybe "f") = TT_Maybe "f"
+-- disjunction (TT_Maybe "f") (TT_Maybe "m") = TT_Maybe "m"
+-- disjunction (TT_Maybe "m") (TT_Maybe "t") = TT_Maybe "t"
+-- disjunction (TT_Maybe "m") (TT_Maybe "f") = TT_Maybe "m"
+-- disjunction (TT_Maybe "m") (TT_Maybe "m") = TT_Maybe "m"
+-- 
+-- unity = TT_Maybe "t"
+-- disunity = TT_Maybe "f"
 
 
 {-

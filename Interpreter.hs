@@ -9,14 +9,23 @@ import Control.OldException
 import DataTypes
 import Core
 import Parser
+import Logic
 
--- important funcs
+import Truths.Boolean
 
-pr :: Rules -> String -> [Bindings]
+-- parsing interface
+
+pr :: (TruthClass a, Eq a) => Rules a -> String -> [Bindings a]
 pr rulesDB query = prove rulesDB [term]
     where term = right $ parse parseQuery "pr" query
 
--- loadFile :: String -> IO Rules
+loadRules :: (TruthClass a) => String -> IO (Rules a)
+loadRules fileName = do
+    handle <- openFile fileName ReadMode
+    str <- hGetContents handle
+    return $ right $ parseText str
+
+-- test = unity
 
 -- debug funcs
 
@@ -35,13 +44,9 @@ rulesStr = unlines [
     "goop(X,a)."
     ]
 
-rulesDBg = right $ parseText rulesStr
+-- rulesDBg = right $ parseText rulesStr
 
-loadRules :: String -> IO Rules
-loadRules fileName = do
-    handle <- openFile fileName ReadMode
-    str <- hGetContents handle
-    return $ right $ parseText str
+-- REPL loop
 
 -- readEvalPrintLoop :: IO ()
 -- readEvalPrintLoop = do
@@ -54,7 +59,8 @@ loadRules fileName = do
 --                         readEvalPrintLoop
 
 
-repl :: Rules -> IO () 
+-- repl :: Rules TruthBoolean -> IO () 
+repl :: (TruthClass a, Show a, Eq a) => Rules a -> IO () 
 repl rulesDB = do
     putStr "?- "
     nextLine <- getLine
@@ -70,6 +76,6 @@ listPrint (x:xs) = do
     listPrint xs
     
 main = do
-    rulesDB <- loadRules "examples/family.pl"
+    rulesDB <- loadRules "examples/family.pl" :: IO (Rules Boolean)
     repl rulesDB
 --     readEvalPrintLoop

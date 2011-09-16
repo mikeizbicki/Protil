@@ -8,7 +8,8 @@ import Data.Char
 import Text.ParserCombinators.Parsec
 
 import DataTypes
-import LogicBoolean
+import Logic
+import Truths.Boolean
 
 -- Parsing below
 
@@ -70,10 +71,10 @@ parseList parser = do
         return next
     return $ first:next
     
-parseRule :: Parser Rule
+parseRule :: (TruthClass a) => Parser (Rule a)
 parseRule = try parseRuleComplex <|> parseRuleSimple
     
-parseRuleComplex :: Parser Rule
+parseRuleComplex :: (TruthClass a) => Parser (Rule a)
 parseRuleComplex = do
     head <- parseTerm
     spaces
@@ -83,14 +84,14 @@ parseRuleComplex = do
     char '.'
     return $ Rule head body defaultTruthValue
 
-parseRuleSimple :: Parser Rule
+parseRuleSimple :: (TruthClass a) => Parser (Rule a)
 parseRuleSimple = do
     head <- parseTerm
     spaces
     char '.'
     return $ Rule head [] defaultTruthValue
 
-parseRules :: Parser Rules
+parseRules :: (TruthClass a) => Parser (Rules a)
 parseRules = do
     spaces
     first <- parseRule
@@ -100,7 +101,8 @@ parseRules = do
         return next
     return $ first:next
     
-parseText :: String -> Either ParseError Rules
+parseText :: (TruthClass a) => String -> Either ParseError (Rules a)
+-- parseText :: (TruthClass a) => String -> Either ParseError (Rules a)
 parseText input = parse parseRules "parseText" input
 
 parseQuery :: Parser Term

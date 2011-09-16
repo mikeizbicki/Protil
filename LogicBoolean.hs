@@ -6,28 +6,27 @@ module LogicBoolean
     ) where
 
 
-type TruthType = Double
+-- type TruthType = Double
+-- 
+-- conjunction :: TruthType -> TruthType -> TruthType
+-- conjunction x y = x + (1-x)*y
+-- 
+-- disjunction :: TruthType -> TruthType -> TruthType
+-- disjunction x y = x + (1-x)*y
+-- 
+-- defaultTruthValue :: TruthType
+-- defaultTruthValue = unity
+-- 
+-- truthOfInference :: TruthType
+-- truthOfInference = unity
+-- 
+-- unity :: TruthType
+-- unity = 1
+-- 
+-- disunity :: TruthType
+-- disunity = 0
 
-conjunction :: TruthType -> TruthType -> TruthType
-conjunction x y = x + (1-x)*y
 
-disjunction :: TruthType -> TruthType -> TruthType
-disjunction x y = x + (1-x)*y
-
-defaultTruthValue :: TruthType
-defaultTruthValue = 0.9
-
-truthOfInference :: TruthType
-truthOfInference = unity
-
-unity :: TruthType
-unity = 1
-
-disunity :: TruthType
-disunity = 0
-
-
-{-
 type TruthType = String
 
 conjunction :: TruthType -> TruthType -> TruthType
@@ -57,11 +56,15 @@ disjunction "m" "m" = "m"
 defaultTruthValue :: TruthType
 defaultTruthValue = "t"
 
+truthOfInference :: TruthType
+truthOfInference = "t"
+
 unity :: TruthType
 unity = "t"
 
 disunity :: TruthType
-disunity = "f"-}
+disunity = "f"
+
 
 
 {-

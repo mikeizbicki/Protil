@@ -5,16 +5,16 @@ module Core
 import Data.Monoid
 
 import DataTypes
-import LogicBoolean
+import Logic
 import Parser
 
 -- Solver below
 
-prove :: Rules -> [Term] -> [Bindings]
+prove :: (TruthClass a, Eq a) => Rules a -> [Term] -> [Bindings a]
 prove rules goals = extractValidBindings $ prove' rules 1 goals
     where extractValidBindings xs = fmap (\x -> TruthList (truthVal x) $ filter (not . isBindingAuto) (truthList x)) $ filter (\x -> truthVal x /= disunity) $ justs xs
 
-prove' :: Rules -> Int -> Terms -> [Maybe Bindings]
+prove' :: (TruthClass a, Eq a) => Rules a -> Int -> Terms -> [Maybe (Bindings a)]
 prove' rules i goals = do
     rule' <- decorateRules i rules
     let (newBindings, newGoals) = branch rule' goals
@@ -26,14 +26,14 @@ prove' rules i goals = do
     answer
         where maybeTruth (Just (TruthList truth list)) = truth
 
-branch :: Rule -> Terms -> (Maybe Bindings, Terms)
+branch :: (TruthClass a) => Rule a -> Terms -> (Maybe (Bindings a), Terms)
 -- branch rule goals | trace ("branch " ++ show rule ++ " " ++ show goals) False = undefined
 branch rule (goal:goals) = (newBindings, sub (unMaybe newBindings) (newGoals++goals))
     where Rule nextTerm body truthValue = rule
           newGoals = body
           newBindings = disunityToMaybe $ unifyTerms nextTerm goal
 
-unifyTerms :: Term -> Term -> Bindings
+unifyTerms :: (TruthClass a) => Term -> Term -> Bindings a
 unifyTerms (CTerm _ []) (CTerm _ []) = TruthList defaultTruthValue []
 unifyTerms (CTerm _ []) (CTerm _ _)  = falseBindings
 unifyTerms (CTerm _ _ ) (CTerm _ []) = falseBindings
@@ -74,7 +74,7 @@ unifyTerms a1 a2 = error ( "Non-exhaustive blah: a1=" ++ (show a1) ++ " a2=" ++ 
 --           t2 = CTerm f2 ys
 -- unifyTerms a1 a2 = error ( "Non-exhaustive blah: a1=" ++ (show a1) ++ " a2=" ++ (show a2))
 
-sub :: Bindings -> [Term] -> [Term]
+sub :: (TruthClass a) => Bindings a -> [Term] -> [Term]
 sub (TruthList truth []) ts       = ts
 sub (TruthList truth (b:bs)) ts   = sub (TruthList truth bs) $ subTerms b ts
 
@@ -88,10 +88,10 @@ subTerm (var, atom) (Var v)
 subTerm _ (Atom a)                  = Atom a
 subTerm binding (CTerm func args)   = CTerm func $ map (subTerm binding) args
 
-decorateRules :: Int -> Rules -> Rules
+decorateRules :: (TruthClass a) => Int -> Rules a -> Rules a
 decorateRules i rules = map (decorateRule i) rules
 
-decorateRule :: Int -> Rule -> Rule
+decorateRule :: (TruthClass a) => Int -> Rule a -> Rule a
 decorateRule i (Rule l rs tv) = Rule (decorateTerm i l) (map (decorateTerm i) rs) tv
 
 decorateTerm :: Int -> Term -> Term
@@ -111,7 +111,7 @@ unMaybe :: (Monoid a) => Maybe a -> a
 unMaybe Nothing     = mempty
 unMaybe (Just xs)   = xs
           
-maybeCons :: Maybe Bindings -> [Maybe Bindings] -> [Maybe Bindings]
+maybeCons :: (TruthClass a) => Maybe (Bindings a) -> [Maybe (Bindings a)] -> [Maybe (Bindings a)]
 maybeCons (Just x) []               = []
 maybeCons (Just x) ((Just y):ys)    = (Just (x `mappend` y)):(maybeCons (Just x) ys)
 maybeCons (Just x) (Nothing:ys)     = Nothing:(maybeCons (Just x) ys)
@@ -121,6 +121,6 @@ eitherToMaybe :: Either a b -> Maybe b
 eitherToMaybe (Right b) = Just b
 eitherToMaybe (Left a)  = Nothing
                         
-disunityToMaybe :: Bindings -> Maybe Bindings
+disunityToMaybe :: (TruthClass a) => (Bindings a) -> Maybe (Bindings a)
 -- disunityToMaybe (TruthList disunity xs) = Nothing
 disunityToMaybe x = Just x

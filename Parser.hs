@@ -70,38 +70,47 @@ parseList parser = do
         return next
     return $ first:next
     
-parseRule :: Parser Rule
-parseRule = try parseRuleComplex <|> parseRuleSimple
+parseRule :: TruthController -> Parser Rule
+parseRule truthController = try (parseRuleComplex truthController) <|> (parseRuleSimple truthController)
     
-parseRuleComplex :: Parser Rule
-parseRuleComplex = do
+parseRuleComplex :: TruthController -> Parser Rule
+parseRuleComplex truthController = do
     head <- parseTerm
     spaces
     string ":-"
     spaces
     body <- parseList parseTerm
     char '.'
-    return $ Rule head body defaultTruthValue
+    return $ Rule head body $ defaultTruthValue truthController
 
-parseRuleSimple :: Parser Rule
-parseRuleSimple = do
+parseRuleSimple :: TruthController -> Parser Rule
+parseRuleSimple truthController = do
     head <- parseTerm
     spaces
     char '.'
-    return $ Rule head [] defaultTruthValue
+    return $ Rule head [] $ defaultTruthValue truthController
 
-parseRules :: Parser Rules
-parseRules = do
+parseRules :: TruthController -> Parser Rules
+parseRules truthController = do
     spaces
-    first <- parseRule
+    first <- parseRule truthController
     spaces
-    next <- option [] $ do
-        next <- parseRules
-        return next
-    return $ first:next
+    next <- option [] $ parseRules truthController
+--     next <- option [] $ do
+--         next <- parseRules truthController
+--         return next
+    return $ ruleCons first next
+    
+parseTruthMode :: Parser String
+parseTruthMode = do
+    spaces
+    char '#'
+    spaces
+    spaces
+    return "test"
     
 parseText :: String -> Either ParseError Rules
-parseText input = parse parseRules "parseText" input
+parseText input = parse (parseRules prolog) "parseText" input
 
 parseQuery :: Parser Term
 parseQuery = do

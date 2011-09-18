@@ -1,0 +1,21 @@
+import LogicBoolean
+
+conjunction (TT_Maybe "t") (TT_Maybe "t") = TT_Maybe "t"
+conjunction (TT_Maybe "t") (TT_Maybe "f") = TT_Maybe "f"
+conjunction (TT_Maybe "t") (TT_Maybe "m") = TT_Maybe "m"
+conjunction (TT_Maybe "f") (TT_Maybe "t") = TT_Maybe "f"
+conjunction (TT_Maybe "f") (TT_Maybe "f") = TT_Maybe "f"
+conjunction (TT_Maybe "f") (TT_Maybe "m") = TT_Maybe "f"
+conjunction (TT_Maybe "m") (TT_Maybe "t") = TT_Maybe "t"
+conjunction (TT_Maybe "m") (TT_Maybe "f") = TT_Maybe "f"
+conjunction (TT_Maybe "m") (TT_Maybe "m") = TT_Maybe "m"
+
+disjunction (TT_Maybe "t") (TT_Maybe "t") = TT_Maybe "t"
+disjunction (TT_Maybe "t") (TT_Maybe "f") = TT_Maybe "t"
+disjunction (TT_Maybe "t") (TT_Maybe "m") = TT_Maybe "t"
+disjunction (TT_Maybe "f") (TT_Maybe "t") = TT_Maybe "t"
+disjunction (TT_Maybe "f") (TT_Maybe "f") = TT_Maybe "f"
+disjunction (TT_Maybe "f") (TT_Maybe "m") = TT_Maybe "m"
+disjunction (TT_Maybe "m") (TT_Maybe "t") = TT_Maybe "t"
+disjunction (TT_Maybe "m") (TT_Maybe "f") = TT_Maybe "m"
+disjunction (TT_Maybe "m") (TT_Maybe "m") = TT_Maybe "m"

@@ -12,46 +12,46 @@ import Parser
 
 prove :: Rules -> [Term] -> [Bindings]
 prove rules goals = extractValidBindings $ prove' rules 1 goals
-    where extractValidBindings xs = fmap (\x -> TruthList (truthVal x) $ filter (not . isBindingAuto) (truthList x)) $ filter (\x -> truthVal x /= disunity) $ justs xs
+    where extractValidBindings xs = fmap (\x -> TruthList (truthVal x) $ filter (not . isBindingAuto) (truthList x)) $ filter (\x -> truthVal x /= disunity prolog) $ justs xs
 
 prove' :: Rules -> Int -> Terms -> [Maybe Bindings]
 prove' rules i goals = do
     rule' <- decorateRules i rules
-    let (newBindings, newGoals) = branch rule' goals
+    let (newBindings, newGoals) = branch prolog rule' goals
     let answer = if newGoals == []
                     then [newBindings]
-                    else if maybeTruth newBindings == disunity-- newBindings==Nothing
+                    else if maybeTruth newBindings == disunity prolog-- newBindings==Nothing
                             then [Nothing]
                             else maybeCons newBindings (prove' rules (i+1) newGoals)
     answer
         where maybeTruth (Just (TruthList truth list)) = truth
 
-branch :: Rule -> Terms -> (Maybe Bindings, Terms)
+branch :: TruthController -> Rule -> Terms -> (Maybe Bindings, Terms)
 -- branch rule goals | trace ("branch " ++ show rule ++ " " ++ show goals) False = undefined
-branch rule (goal:goals) = (newBindings, sub (unMaybe newBindings) (newGoals++goals))
+branch truthController rule (goal:goals) = (newBindings, sub (unMaybe newBindings) (newGoals++goals))
     where Rule nextTerm body truthValue = rule
           newGoals = body
-          newBindings = disunityToMaybe $ unifyTerms nextTerm goal
+          newBindings = disunityToMaybe $ unifyTerms truthController nextTerm goal
 
-unifyTerms :: Term -> Term -> Bindings
-unifyTerms (CTerm _ []) (CTerm _ []) = TruthList defaultTruthValue []
-unifyTerms (CTerm _ []) (CTerm _ _)  = falseBindings
-unifyTerms (CTerm _ _ ) (CTerm _ []) = falseBindings
-unifyTerms (CTerm f1 (x:xs)) (CTerm f2 (y:ys))
-    | f1 /= f2  = falseBindings
-    | length xs /= length ys = falseBindings
+unifyTerms :: TruthController -> Term -> Term -> Bindings
+unifyTerms truthController (CTerm _ []) (CTerm _ []) = TruthList (defaultTruthValue truthController) []
+unifyTerms truthController (CTerm _ []) (CTerm _ _)  = falseBindings truthController 
+unifyTerms truthController (CTerm _ _ ) (CTerm _ []) = falseBindings truthController 
+unifyTerms truthController (CTerm f1 (x:xs)) (CTerm f2 (y:ys))
+    | f1 /= f2  = falseBindings truthController 
+    | length xs /= length ys = falseBindings truthController 
     | hasVar x  = 
-        let rest = unifyTerms (subTerm (x,y) t1) (subTerm (x,y) t2) in
-            (TruthList truthOfInference [(x,y)]) `mappend` rest
+        let rest = unifyTerms truthController (subTerm (x,y) t1) (subTerm (x,y) t2) in
+            (TruthList (truthOfInference truthController) [(x,y)]) `mappend` rest
     | hasVar y  = 
-        let rest = unifyTerms (subTerm (y,x) t1) (subTerm (y,x) t2) in
-            (TruthList truthOfInference [(y,x)]) `mappend` rest
-    | x == y    = unifyTerms t1 t2
-    | otherwise = falseBindings
+        let rest = unifyTerms truthController (subTerm (y,x) t1) (subTerm (y,x) t2) in
+            (TruthList (truthOfInference truthController) [(y,x)]) `mappend` rest
+    | x == y    = unifyTerms truthController t1 t2
+    | otherwise = falseBindings truthController 
     where
           t1 = CTerm f1 xs
           t2 = CTerm f2 ys
-unifyTerms a1 a2 = error ( "Non-exhaustive blah: a1=" ++ (show a1) ++ " a2=" ++ (show a2))
+unifyTerms truthController a1 a2 = error ( "Non-exhaustive blah: a1=" ++ (show a1) ++ " a2=" ++ (show a2))
 
 -- unifyTerms :: Term -> Term -> Either String Bindings
 -- unifyTerms (CTerm _ []) (CTerm _ []) = Right (TruthList defaultTruthValue [])

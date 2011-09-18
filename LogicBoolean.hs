@@ -1,39 +1,30 @@
 module LogicBoolean
-    ( TruthType
-    , conjunction, disjunction
-    , defaultTruthValue, truthOfInference
-    , unity, disunity
+    ( 
+
+    
     ) where
 
 -- generic definitions
 
-data TruthType = TT_Boolean String 
-               | TT_Maybe String 
-               | TT_Percent Double
-    deriving (Eq, Show)
-    
-conjunction :: TruthType -> TruthType -> TruthType
-disjunction :: TruthType -> TruthType -> TruthType
-unity :: TruthType
-disunity :: TruthType
 
-defaultTruthValue :: TruthType
-defaultTruthValue = unity
 
-truthOfInference :: TruthType
-truthOfInference = unity
+
+-- unity :: TruthType
+-- disunity :: TruthType
+-- 
+-- defaultTruthValue :: String -> TruthType
+-- defaultTruthValue _ = unity
+-- 
+-- truthOfInference :: TruthType
+-- truthOfInference = unity
 
 -- TT_Percent
 
-conjunction (TT_Percent x) (TT_Percent y) = TT_Percent (x + (1-x)*y)
-
-disjunction (TT_Percent x) (TT_Percent y) = TT_Percent (x + (1-x)*y)
-
-unity = TT_Percent 1
-
-disunity = TT_Percent 0
+-- unity = TT_Percent 1
+-- disunity = TT_Percent 0
 
 -- TT_Maybe
+
 
 -- conjunction (TT_Maybe "t") (TT_Maybe "t") = TT_Maybe "t"
 -- conjunction (TT_Maybe "t") (TT_Maybe "f") = TT_Maybe "f"

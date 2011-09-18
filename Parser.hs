@@ -53,9 +53,7 @@ parseTerm = do
     spaces
     args <- option [] $ do
         char '('
-        args <- option [] $ do
-            args <- parseList parseAtom
-            return args
+        args <- option [] $ parseList parseAtom
         char ')'
         return $ args
     return $ CTerm (functor) args
@@ -94,12 +92,28 @@ parseRuleSimple = do
 parseRules :: (TruthClass a) => Parser (Rules a)
 parseRules = do
     spaces
+    test <- option [] parsePragma
+    spaces
     first <- parseRule
     spaces
-    next <- option [] $ do
-        next <- parseRules
-        return next
+    next <- option [] parseRules
     return $ first:next
+    
+parsePragma :: Parser TruthData
+parsePragma = do
+    spaces
+    char '#'
+    spaces
+    lval <- many ( letter <|> digit )
+    spaces
+    char '='
+    spaces
+    rval <- many ( letter <|> digit )
+    spaces
+    if rval == "percent"
+       then return $ TruthData Double
+       
+    return lval
     
 parseText :: (TruthClass a) => String -> Either ParseError (Rules a)
 -- parseText :: (TruthClass a) => String -> Either ParseError (Rules a)

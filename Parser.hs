@@ -94,13 +94,28 @@ parseRuleSimple = do
 parseRules :: (TruthClass a) => Parser (Rules a)
 parseRules = do
     spaces
+    txt <- option "" parsePragma
+    spaces
     first <- parseRule
     spaces
     next <- option [] $ do
         next <- parseRules
         return next
     return $ first:next
-    
+
+parsePragma :: Parser String
+parsePragma = do
+    spaces
+    char '#'
+    spaces
+    lval <- many ( letter <|> digit )
+    spaces
+    char '='
+    spaces
+    rval <- many ( letter <|> digit )
+    spaces
+    return rval
+
 parseText :: (TruthClass a) => String -> Either ParseError (Rules a)
 -- parseText :: (TruthClass a) => String -> Either ParseError (Rules a)
 parseText input = parse parseRules "parseText" input

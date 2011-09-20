@@ -25,3 +25,11 @@ instance TruthClass Boolean where
     unity = T
     disunity = F
 
+instance TruthClass Double where
+    
+    conjunction x y = x*y
+    
+    disjunction x y = x + y - x*y
+    
+    unity = 1
+    disunity = 0

@@ -76,6 +76,8 @@ listPrint (x:xs) = do
     listPrint xs
     
 main = do
-    rulesDB <- loadRules "examples/family.pl" :: IO (Rules Boolean)
+    rulesDB <- if True 
+                  then loadRules "examples/family.pl" :: IO (Rules Boolean)
+                  else loadRules "examples/family.pl" :: IO (Rules Double)
     repl rulesDB
 --     readEvalPrintLoop

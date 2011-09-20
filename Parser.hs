@@ -5,6 +5,7 @@ module Parser
     ) where
 
 import Data.Char
+import Data.Monoid
 import Text.ParserCombinators.Parsec
 
 import DataTypes
@@ -78,12 +79,21 @@ parseRuleComplex :: (TruthClass a) => Parser (Rule a)
 parseRuleComplex = do
     head <- parseTerm
     spaces
-    string ":-"
+    char ':'
+    truthVal <- option defaultTruthValue parseTruthVal
+    char '-'
     spaces
     body <- parseList parseTerm
     char '.'
-    return $ Rule head body defaultTruthValue
+    return $ Rule head body truthVal--defaultTruthValue
 
+parseTruthVal :: (TruthClass a) => Parser a
+parseTruthVal = do
+    spaces
+    invalid <- many ( letter )
+    spaces
+    return defaultTruthValue
+    
 parseRuleSimple :: (TruthClass a) => Parser (Rule a)
 parseRuleSimple = do
     head <- parseTerm
@@ -98,10 +108,8 @@ parseRules = do
     spaces
     first <- parseRule
     spaces
-    next <- option [] $ do
-        next <- parseRules
-        return next
-    return $ first:next
+    next <- option mempty parseRules
+    return $ (Rules [first]) `mappend` next
 
 parsePragma :: Parser String
 parsePragma = do
@@ -114,7 +122,9 @@ parsePragma = do
     spaces
     rval <- many ( letter <|> digit )
     spaces
-    return rval
+    if (lval == "controller")
+       then return rval
+       else return ""
 
 parseText :: (TruthClass a) => String -> Either ParseError (Rules a)
 -- parseText :: (TruthClass a) => String -> Either ParseError (Rules a)

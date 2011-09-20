@@ -1,6 +1,7 @@
 module DataTypes
     ( Term(Atom,Var,CTerm), functor, args, Terms
-    , Rule(Rule), ruleL, ruleR, ruleTruth, Rules
+    , Rule(Rule), ruleL, ruleR, ruleTruth
+    , Rules(Rules), fmap2
     , Binding, Bindings
     , TruthList(TruthList), truthVal, truthList
     , arity, hasVar, isBindingAuto
@@ -10,6 +11,7 @@ module DataTypes
     ) where
 
 import Data.Monoid
+import Data.Typeable
 import Control.Monad
 
 import Logic
@@ -25,7 +27,28 @@ data Term = Atom String
 data (TruthClass a) => Rule a = Rule { ruleL :: Term, ruleR :: [Term], ruleTruth :: a }
     deriving (Show,Eq)
 
-type Rules a = [Rule a]
+data {-(TruthClass a) => -}Rules a = Rules { ruleList :: [Rule a]}
+    deriving (Eq,Show)
+
+
+data Funk a = Funk a
+data Tester a = Tester [Funk a]
+
+-- instance Functor Tester where
+--     fmap f (Tester xs) = Tester (map f xs)
+
+-- instance Monad Rules where
+--     return (Rule a1 a2 a3) = (Rules [Rule a1 a2 a3])
+--     (Rules xs) >>= f = Rules ( concat (map f xs) )
+
+-- fmap2 :: (Functor f) => (a -> b) -> (f a) -> (f b)
+fmap2 f (Rules xs) = Rules (map f xs)
+
+instance (TruthClass a) => Monoid (Rules a) where
+    mempty = Rules []
+    mappend (Rules xs) (Rules ys) = Rules (xs ++ ys)
+   
+-- type Rules a = [Rule a]
 type Terms = [Term]
 
 type Binding = (Term,Term)

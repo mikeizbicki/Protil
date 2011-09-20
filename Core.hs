@@ -20,7 +20,7 @@ prove' rules i goals = do
     let (newBindings, newGoals) = branch rule' goals
     let answer = if newGoals == []
                     then [newBindings]
-                    else if maybeTruth newBindings == disunity-- newBindings==Nothing
+                    else if maybeTruth newBindings == disunity
                             then [Nothing]
                             else maybeCons newBindings (prove' rules (i+1) newGoals)
     answer
@@ -89,7 +89,7 @@ subTerm _ (Atom a)                  = Atom a
 subTerm binding (CTerm func args)   = CTerm func $ map (subTerm binding) args
 
 decorateRules :: (TruthClass a) => Int -> Rules a -> Rules a
-decorateRules i rules = map (decorateRule i) rules
+decorateRules i rules = fmap2 (decorateRule i) rules
 
 decorateRule :: (TruthClass a) => Int -> Rule a -> Rule a
 decorateRule i (Rule l rs tv) = Rule (decorateTerm i l) (map (decorateTerm i) rs) tv

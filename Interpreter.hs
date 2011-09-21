@@ -11,15 +11,15 @@ import Core
 import Parser
 import Logic
 
-import Truths.Boolean
+-- import Truths.Boolean
 
 -- parsing interface
 
-pr :: (TruthClass a, Eq a) => Rules a -> String -> [Bindings a]
-pr rulesDB query = prove rulesDB [term]
+pr :: Rules -> String -> [Bindings]
+pr rulesDB query = prove "double" rulesDB [term]
     where term = right $ parse parseQuery "pr" query
 
-loadRules :: (TruthClass a) => String -> IO (Rules a)
+loadRules :: String -> IO Rules
 loadRules fileName = do
     handle <- openFile fileName ReadMode
     str <- hGetContents handle
@@ -60,7 +60,7 @@ rulesStr = unlines [
 
 
 -- repl :: Rules TruthBoolean -> IO () 
-repl :: (TruthClass a, Show a, Eq a) => Rules a -> IO () 
+repl :: Rules -> IO () 
 repl rulesDB = do
     putStr "?- "
     nextLine <- getLine
@@ -76,8 +76,6 @@ listPrint (x:xs) = do
     listPrint xs
     
 main = do
-    rulesDB <- if True 
-                  then loadRules "examples/family.pl" :: IO (Rules Boolean)
-                  else loadRules "examples/family.pl" :: IO (Rules Double)
+    rulesDB <- loadRules "examples/family.pl"
     repl rulesDB
 --     readEvalPrintLoop

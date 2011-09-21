@@ -10,7 +10,7 @@ import Text.ParserCombinators.Parsec
 
 import DataTypes
 import Logic
-import Truths.Boolean
+-- import Truths.Boolean
 
 -- Parsing below
 
@@ -72,47 +72,47 @@ parseList parser = do
         return next
     return $ first:next
     
-parseRule :: (TruthClass a) => Parser (Rule a)
-parseRule = try parseRuleComplex <|> parseRuleSimple
+parseRule :: String -> Parser Rule
+parseRule controlStr = try (parseRuleComplex controlStr) <|> (parseRuleSimple controlStr)
     
-parseRuleComplex :: (TruthClass a) => Parser (Rule a)
-parseRuleComplex = do
+parseRuleComplex :: String -> Parser Rule
+parseRuleComplex controlStr = do
     head <- parseTerm
     spaces
     char ':'
-    truthVal <- option defaultTruthValue parseTruthVal
+--     truthVal <- option defaultTruthValue parseTruthVal
     char '-'
     spaces
     body <- parseList parseTerm
     char '.'
-    return $ Rule head body truthVal--defaultTruthValue
+    return $ Rule head body $ truthFetch controlStr "defaultTruthValue"
 
-parseTruthVal :: (TruthClass a) => Parser a
-parseTruthVal = do
-    spaces
-    invalid <- many ( letter )
-    spaces
-    return defaultTruthValue
+-- parseTruthVal :: (TruthClass a) => Parser a
+-- parseTruthVal = do
+--     spaces
+--     invalid <- many ( letter )
+--     spaces
+--     return defaultTruthValue
     
-parseRuleSimple :: (TruthClass a) => Parser (Rule a)
-parseRuleSimple = do
+parseRuleSimple :: String -> Parser Rule
+parseRuleSimple controlStr = do
     head <- parseTerm
     spaces
     char '.'
-    return $ Rule head [] defaultTruthValue
+    return $ Rule head [] $ truthFetch controlStr "defaultTruthValue"
 
-parseRules :: (TruthClass a) => Parser (Rules a)
-parseRules = do
+parseRules :: String -> Parser Rules
+parseRules controlStr = do
     spaces
-    txt <- option "" parsePragma
+    txt <- option "" $ parsePragma controlStr
     spaces
-    first <- parseRule
+    first <- parseRule controlStr
     spaces
-    next <- option mempty parseRules
-    return $ (Rules [first]) `mappend` next
+    next <- option mempty $ parseRules controlStr
+    return $ first:next
 
-parsePragma :: Parser String
-parsePragma = do
+parsePragma :: String -> Parser String
+parsePragma oldControlStr = do
     spaces
     char '#'
     spaces
@@ -124,11 +124,11 @@ parsePragma = do
     spaces
     if (lval == "controller")
        then return rval
-       else return ""
+       else return oldControlStr
 
-parseText :: (TruthClass a) => String -> Either ParseError (Rules a)
+parseText :: String -> Either ParseError Rules
 -- parseText :: (TruthClass a) => String -> Either ParseError (Rules a)
-parseText input = parse parseRules "parseText" input
+parseText input = parse (parseRules "bool") "parseText" input
 
 parseQuery :: Parser Term
 parseQuery = do

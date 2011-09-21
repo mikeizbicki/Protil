@@ -10,48 +10,50 @@ import Parser
 
 -- Solver below
 
-prove :: (TruthClass a, Eq a) => Rules a -> [Term] -> [Bindings a]
-prove rules goals = extractValidBindings $ prove' rules 1 goals
-    where extractValidBindings xs = fmap (\x -> TruthList (truthVal x) $ filter (not . isBindingAuto) (truthList x)) $ filter (\x -> truthVal x /= disunity) $ justs xs
+prove :: String -> Rules -> [Term] -> [Bindings]
+prove controllerStr rules goals = extractValidBindings $ prove' controllerStr rules 1 goals
+    where extractValidBindings xs = {-fmap (\x -> TruthList (truthVal x) $ filter (not . isBindingAuto) (truthList x)) $ filter (\x -> truthVal x /= (truthFetch controllerStr disunity)) $-} justs xs
 
-prove' :: (TruthClass a, Eq a) => Rules a -> Int -> Terms -> [Maybe (Bindings a)]
-prove' rules i goals = do
+prove' :: String -> Rules -> Int -> Terms -> [Maybe Bindings]
+prove' controllerStr rules i goals = do
     rule' <- decorateRules i rules
-    let (newBindings, newGoals) = branch rule' goals
+    let (newBindings, newGoals) = branch controllerStr rule' goals
     let answer = if newGoals == []
                     then [newBindings]
-                    else if maybeTruth newBindings == disunity
+                    else if maybeTruth newBindings == truthFetch controllerStr "disunity"
                             then [Nothing]
-                            else maybeCons newBindings (prove' rules (i+1) newGoals)
+                            else maybeCons newBindings (prove' controllerStr rules (i+1) newGoals)
     answer
         where maybeTruth (Just (TruthList truth list)) = truth
 
-branch :: (TruthClass a) => Rule a -> Terms -> (Maybe (Bindings a), Terms)
+branch :: String -> Rule -> Terms -> (Maybe Bindings, Terms)
 -- branch rule goals | trace ("branch " ++ show rule ++ " " ++ show goals) False = undefined
-branch rule (goal:goals) = (newBindings, sub (unMaybe newBindings) (newGoals++goals))
+branch controllerStr rule (goal:goals) = (newBindings, sub (unMaybe controllerStr newBindings) (newGoals++goals))
     where Rule nextTerm body truthValue = rule
           newGoals = body
-          newBindings = disunityToMaybe $ unifyTerms nextTerm goal
+          newBindings = disunityToMaybe $ unifyTerms controllerStr nextTerm goal
 
-unifyTerms :: (TruthClass a) => Term -> Term -> Bindings a
-unifyTerms (CTerm _ []) (CTerm _ []) = TruthList defaultTruthValue []
-unifyTerms (CTerm _ []) (CTerm _ _)  = falseBindings
-unifyTerms (CTerm _ _ ) (CTerm _ []) = falseBindings
-unifyTerms (CTerm f1 (x:xs)) (CTerm f2 (y:ys))
-    | f1 /= f2  = falseBindings
-    | length xs /= length ys = falseBindings
+unifyTerms :: String -> Term -> Term -> Bindings
+unifyTerms controllerStr (CTerm _ []) (CTerm _ []) = TruthList (truthFetch controllerStr "defaultTruthValue") []
+unifyTerms controllerStr (CTerm _ []) (CTerm _ _)  = falseBindings controllerStr 
+unifyTerms controllerStr (CTerm _ _ ) (CTerm _ []) = falseBindings controllerStr 
+unifyTerms controllerStr (CTerm f1 (x:xs)) (CTerm f2 (y:ys))
+    | f1 /= f2  = falseBindings controllerStr 
+    | length xs /= length ys = falseBindings controllerStr 
     | hasVar x  = 
-        let rest = unifyTerms (subTerm (x,y) t1) (subTerm (x,y) t2) in
-            (TruthList truthOfInference [(x,y)]) `mappend` rest
+        let rest = unifyTerms controllerStr (subTerm (x,y) t1) (subTerm (x,y) t2) in
+--             truthOfInference [(x,y)] `mappend` rest
+            (TruthList (truthFetch controllerStr "truthOfInference") [(x,y)]) `truthListAppend` rest
     | hasVar y  = 
-        let rest = unifyTerms (subTerm (y,x) t1) (subTerm (y,x) t2) in
-            (TruthList truthOfInference [(y,x)]) `mappend` rest
-    | x == y    = unifyTerms t1 t2
-    | otherwise = falseBindings
+        let rest = unifyTerms controllerStr (subTerm (y,x) t1) (subTerm (y,x) t2) in
+--             truthOfInference [(y,x)] `mappend` rest
+            (TruthList (truthFetch controllerStr "truthOfInference") [(y,x)]) `truthListAppend` rest
+    | x == y    = unifyTerms controllerStr t1 t2
+    | otherwise = falseBindings controllerStr 
     where
           t1 = CTerm f1 xs
           t2 = CTerm f2 ys
-unifyTerms a1 a2 = error ( "Non-exhaustive blah: a1=" ++ (show a1) ++ " a2=" ++ (show a2))
+unifyTerms controllerStr a1 a2 = error ( "Non-exhaustive blah: a1=" ++ (show a1) ++ " a2=" ++ (show a2))
 
 -- unifyTerms :: Term -> Term -> Either String Bindings
 -- unifyTerms (CTerm _ []) (CTerm _ []) = Right (TruthList defaultTruthValue [])
@@ -74,7 +76,7 @@ unifyTerms a1 a2 = error ( "Non-exhaustive blah: a1=" ++ (show a1) ++ " a2=" ++ 
 --           t2 = CTerm f2 ys
 -- unifyTerms a1 a2 = error ( "Non-exhaustive blah: a1=" ++ (show a1) ++ " a2=" ++ (show a2))
 
-sub :: (TruthClass a) => Bindings a -> [Term] -> [Term]
+sub :: Bindings -> [Term] -> [Term]
 sub (TruthList truth []) ts       = ts
 sub (TruthList truth (b:bs)) ts   = sub (TruthList truth bs) $ subTerms b ts
 
@@ -88,10 +90,10 @@ subTerm (var, atom) (Var v)
 subTerm _ (Atom a)                  = Atom a
 subTerm binding (CTerm func args)   = CTerm func $ map (subTerm binding) args
 
-decorateRules :: (TruthClass a) => Int -> Rules a -> Rules a
-decorateRules i rules = fmap2 (decorateRule i) rules
+decorateRules :: Int -> Rules -> Rules
+decorateRules i rules = map (decorateRule i) rules
 
-decorateRule :: (TruthClass a) => Int -> Rule a -> Rule a
+decorateRule :: Int -> Rule -> Rule
 decorateRule i (Rule l rs tv) = Rule (decorateTerm i l) (map (decorateTerm i) rs) tv
 
 decorateTerm :: Int -> Term -> Term
@@ -107,13 +109,17 @@ justs []            = []
 justs ((Just x):xs) = x:(justs xs)
 justs (Nothing:xs)  = justs xs
 
-unMaybe :: (Monoid a) => Maybe a -> a
+{-unMaybe :: (Monoid a) => Maybe a -> a
 unMaybe Nothing     = mempty
-unMaybe (Just xs)   = xs
+unMaybe (Just xs)   = xs-}
+
+unMaybe :: String -> Maybe Bindings -> Bindings
+unMaybe controllerStr Nothing     = falseBindings controllerStr
+unMaybe controllerStr (Just xs)   = xs
           
-maybeCons :: (TruthClass a) => Maybe (Bindings a) -> [Maybe (Bindings a)] -> [Maybe (Bindings a)]
+maybeCons :: Maybe Bindings -> [Maybe Bindings] -> [Maybe Bindings]
 maybeCons (Just x) []               = []
-maybeCons (Just x) ((Just y):ys)    = (Just (x `mappend` y)):(maybeCons (Just x) ys)
+maybeCons (Just x) ((Just y):ys)    = (Just (x `truthListAppend` y)):(maybeCons (Just x) ys)
 maybeCons (Just x) (Nothing:ys)     = Nothing:(maybeCons (Just x) ys)
 maybeCons Nothing  ys               = ys
 
@@ -121,6 +127,6 @@ eitherToMaybe :: Either a b -> Maybe b
 eitherToMaybe (Right b) = Just b
 eitherToMaybe (Left a)  = Nothing
                         
-disunityToMaybe :: (TruthClass a) => (Bindings a) -> Maybe (Bindings a)
+disunityToMaybe :: Bindings -> Maybe Bindings
 -- disunityToMaybe (TruthList disunity xs) = Nothing
 disunityToMaybe x = Just x

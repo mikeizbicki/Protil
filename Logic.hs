@@ -4,11 +4,13 @@ module Logic
     , defaultTruthValue, truthOfInference
     , unity, disunity
     , convert, convertDefaults
-    , truthFetch
+    , truthFetch, defaultTruth
     , TruthBox
     , conjunctionTB
     ) where
 
+import Data.Dynamic
+import Data.Typeable
 -------------------------------------------------------------------------------
 --
 -- These headers must be redefined whenever you want to add a new logic
@@ -17,6 +19,9 @@ data TruthBox = NoTruth
               | TB1 Boolean
               | TB2 Double
     deriving (Eq,Show)
+
+defaultTruth :: String
+defaultTruth = "bool"
 
 truthFetch :: String -> String -> TruthBox
 truthFetch "bool"   x = TB1 $ convert x

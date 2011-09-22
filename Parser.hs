@@ -101,18 +101,18 @@ parseRuleSimple controlStr = do
     char '.'
     return $ Rule head [] $ truthFetch controlStr "defaultTruthValue"
 
-parseRules :: String -> Parser Rules
+parseRules :: String -> Parser RulesDB
 parseRules controlStr = do
     spaces
-    txt <- option "" $ parsePragma controlStr
+    controlStrNew <- option controlStr $ parsePragma
     spaces
-    first <- parseRule controlStr
+    first <- parseRule controlStrNew
     spaces
-    next <- option mempty $ parseRules controlStr
-    return $ first:next
+    RulesDB oldController next <- option (RulesDB "" []) $ parseRules controlStrNew
+    return $ RulesDB controlStrNew (first:next)
 
-parsePragma :: String -> Parser String
-parsePragma oldControlStr = do
+parsePragma :: Parser String
+parsePragma = do
     spaces
     char '#'
     spaces
@@ -122,13 +122,10 @@ parsePragma oldControlStr = do
     spaces
     rval <- many ( letter <|> digit )
     spaces
-    if (lval == "controller")
-       then return rval
-       else return oldControlStr
+    return rval
 
-parseText :: String -> Either ParseError Rules
--- parseText :: (TruthClass a) => String -> Either ParseError (Rules a)
-parseText input = parse (parseRules "bool") "parseText" input
+parseText :: String -> Either ParseError RulesDB
+parseText input = parse (parseRules defaultTruth) "parseText" input
 
 parseQuery :: Parser Term
 parseQuery = do

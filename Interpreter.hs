@@ -15,11 +15,11 @@ import Logic
 
 -- parsing interface
 
-pr :: Rules -> String -> [Bindings]
-pr rulesDB query = prove "double" rulesDB [term]
+pr :: RulesDB -> String -> [Bindings]
+pr rulesDB query = prove rulesDB [term]
     where term = right $ parse parseQuery "pr" query
 
-loadRules :: String -> IO Rules
+loadRules :: String -> IO RulesDB
 loadRules fileName = do
     handle <- openFile fileName ReadMode
     str <- hGetContents handle
@@ -32,19 +32,6 @@ loadRules fileName = do
 right :: Show a => Either a b -> b
 right (Right r) = r
 right (Left l) = error $ show l
-
-rulesStr = unlines [
-    "father(a,b).", 
-    "father(b,c).",
-    "father(c,d).",
-    "ancestor(X,Y) :- father(X,Y).",
-    "ancestor(X,Y) :- father(X,Z),ancestor(Z,Y).",
-    "grandfather(X,Y) :- father(X,A), father(A,Y).",
-    "foo(a,b,c,d,e,f).",
-    "goop(X,a)."
-    ]
-
--- rulesDBg = right $ parseText rulesStr
 
 -- REPL loop
 
@@ -60,7 +47,7 @@ rulesStr = unlines [
 
 
 -- repl :: Rules TruthBoolean -> IO () 
-repl :: Rules -> IO () 
+repl :: RulesDB -> IO () 
 repl rulesDB = do
     putStr "?- "
     nextLine <- getLine

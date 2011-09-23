@@ -4,13 +4,16 @@ module Logic
     , defaultTruthValue, truthOfInference
     , unity, disunity
     , convert, convertDefaults
-    , truthFetch, defaultTruth
+    , truthFetch, parseTruthBox
+    , defaultTruth
     , TruthBox
     , conjunctionTB
     ) where
 
-import Data.Dynamic
-import Data.Typeable
+-- import Data.Dynamic
+-- import Data.Typeable
+import Text.ParserCombinators.Parsec
+
 -------------------------------------------------------------------------------
 --
 -- These headers must be redefined whenever you want to add a new logic
@@ -18,6 +21,7 @@ import Data.Typeable
 data TruthBox = NoTruth
               | TB1 Boolean
               | TB2 Double
+              | TB3 MaybeLogic
     deriving (Eq,Show)
 
 defaultTruth :: String
@@ -26,11 +30,32 @@ defaultTruth = "bool"
 truthFetch :: String -> String -> TruthBox
 truthFetch "bool"   x = TB1 $ convert x
 truthFetch "double" x = TB2 $ convert x
+truthFetch "maybe"  x = TB3 $ convert x
 
 conjunctionTB :: TruthBox -> TruthBox -> TruthBox
 conjunctionTB (TB1 x) (TB1 y) = TB1 (conjunction x y)
 conjunctionTB (TB2 x) (TB2 y) = TB2 (conjunction x y)
+conjunctionTB (TB3 x) (TB3 y) = TB3 (conjunction x y)
 
+parseTruthBox :: Parser TruthBox
+parseTruthBox =  parseTB1
+             <|> parseTB2
+             <|> parseTB3
+
+parseTB1 = parseT <|> parseF
+    where parseT = char 'T' >> (return $ TB1 T)
+          parseF = char 'F' >> (return $ TB1 F)
+          
+parseTB2 = do
+    str1 <- digit
+    str2 <- option "" (char '.' >> many digit)
+    let dbl = read (str1:'.':str2)
+    return $ TB2 dbl
+        
+parseTB3 = parseT <|> parseF <|> parseM
+    where parseT = char 'T' >> (return $ TB3 Tm)
+          parseF = char 'F' >> (return $ TB3 Fm)
+          parseM = char 'M' >> (return $ TB3 Mm)
 -- NOTE:
 --
 -- Due to current Haskell standards, we cannot derive existentially quantified classes,
@@ -61,6 +86,8 @@ class (Eq a, Show a) => TruthClass a where
     disunity :: a
     
     convert :: String -> a 
+    
+--     parseValue :: Parser a
 
     -- these defaults may be overridden to change operation
     defaultTruthValue :: a
@@ -96,8 +123,10 @@ instance TruthClass Boolean where
     unity = T
     disunity = F
     
-    convert "T" = T
-    convert "F" = F
+--     parseValue = parseT <|> parseF
+--         where parseT = char 'T' >> return T
+--               parseF = char 'F' >> return F
+    
     convert x = convertDefaults x
 
 -------------------------------------------------------------------------------
@@ -110,6 +139,46 @@ instance TruthClass Double where
     
     unity = 1
     disunity = 0
+
+--     parseValue = do
+--         str <- many (digit <|> char '.')
+--         let dbl = read str
+--         return dbl
+
+    convert x = convertDefaults x
+
+-------------------------------------------------------------------------------
+-- Maybe Logic
+
+data MaybeLogic = Tm | Fm | Mm deriving (Show, Eq)
+
+instance TruthClass MaybeLogic where
+    
+    conjunction Tm Tm = Tm
+    conjunction Tm Fm = Fm
+    conjunction Tm Mm = Mm
+    conjunction Fm Tm = Fm
+    conjunction Fm Fm = Fm
+    conjunction Fm Mm = Fm
+    conjunction Mm Tm = Mm
+    conjunction Mm Fm = Fm
+    conjunction Mm Mm = Mm
+    
+    disjunction Tm Tm = Tm
+    disjunction Tm Fm = Tm
+    disjunction Tm Mm = Tm
+    disjunction Fm Tm = Tm
+    disjunction Fm Fm = Fm
+    disjunction Fm Mm = Mm
+    disjunction Mm Tm = Tm
+    disjunction Mm Fm = Mm
+    disjunction Mm Mm = Mm
+    
+    unity = Tm
+    disunity = Fm
+    
+--     parseValue = parseT <|> parseF
+--         where parseT = char 'T' >> return T
+--               parseF = char 'F' >> return F
     
     convert x = convertDefaults x
-    

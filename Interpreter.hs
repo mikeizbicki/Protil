@@ -62,6 +62,22 @@ listPrint (x:xs) = do
     putStrLn $ show x
     listPrint xs
     
+    
+---------------------------------------
+-- Pretty print
+
+ppShowBinding :: Binding -> String
+ppShowBinding (Var v, Atom a) = v ++ "=" ++ a
+
+ppShowBindings :: Bindings -> String
+ppShowBindings x = show x
+-- ppShowBindings (TruthList t [])     = ""
+-- ppShowBindings (TruthList t x:xs)   = show x ++ "\n" ++ (ppShowBindings 
+
+-- ppShowBindings xs = concat $ truthList $ fmap ((\ x -> x ++ "\n" ) . ppShowBinding) xs
+-- ppShowBindings (t,xs) = t ++ "\n" ++ (concat $ map ((\ x -> x ++ "\n" ) . ppShowBinding) xs)
+
+    
 main = do
     rulesDB <- loadRules "examples/family.pl"
     repl rulesDB

@@ -2,7 +2,7 @@ module DataTypes
     ( Term(Atom,Var,CTerm), functor, args, Terms
     , Rule(Rule), ruleL, ruleR, ruleTruth
     , Rules
-    , RulesDB(RulesDB)
+    , RulesDB(RulesDB), dbTruthController, dbRules
     , Binding, Bindings
     , TruthList(TruthList), truthVal, truthList
     , truthListAppend
@@ -21,7 +21,7 @@ data Term = Atom String
           | CTerm { functor :: String, args :: [Term] }
     deriving (Show,Eq)
 
-data RulesDB = RulesDB { dbTruthController :: String, dbRules :: Rules }
+data RulesDB = RulesDB { dbTruthController :: String, dbRules :: [Rule] }
 type Rules = [Rule]
 data Rule = Rule { ruleL :: Term, ruleR :: [Term], ruleTruth :: TruthBox }
     deriving (Show,Eq)

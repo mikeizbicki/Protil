@@ -10,7 +10,6 @@ import Text.ParserCombinators.Parsec
 
 import DataTypes
 import Logic
--- import Truths.Boolean
 
 -- Parsing below
 
@@ -71,35 +70,27 @@ parseList parser = do
         next <- parseList parser
         return next
     return $ first:next
-    
-parseRule :: String -> Parser Rule
-parseRule controlStr = try (parseRuleComplex controlStr) <|> (parseRuleSimple controlStr)
-    
-parseRuleComplex :: String -> Parser Rule
-parseRuleComplex controlStr = do
-    head <- parseTerm
-    spaces
-    char ':'
---     truthVal <- option defaultTruthValue parseTruthVal
-    char '-'
-    spaces
-    body <- parseList parseTerm
-    char '.'
-    return $ Rule head body $ truthFetch controlStr "defaultTruthValue"
 
--- parseTruthVal :: (TruthClass a) => Parser a
--- parseTruthVal = do
---     spaces
---     invalid <- many ( letter )
---     spaces
---     return defaultTruthValue
-    
-parseRuleSimple :: String -> Parser Rule
-parseRuleSimple controlStr = do
+parseRule :: String -> Parser Rule
+parseRule controlStr = do
     head <- parseTerm
     spaces
+    body <- option [] parseBody
+    spaces
+    truthVal <-option (truthFetch controlStr "defaultTruthValue") parseTruthVal
+    spaces
     char '.'
-    return $ Rule head [] $ truthFetch controlStr "defaultTruthValue"
+    return $ Rule head body truthVal
+        where parseBody = do
+                  char ':'
+                  char '-'
+                  spaces
+                  parseList parseTerm
+              parseTruthVal = do
+                  char '<'
+                  char '-'
+                  spaces
+                  parseTruthBox
 
 parseRules :: String -> Parser RulesDB
 parseRules controlStr = do

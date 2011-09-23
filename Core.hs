@@ -13,47 +13,58 @@ import Parser
 -- FIXME: make this code actually readable
 
 prove :: RulesDB -> [Term] -> [Bindings]
-prove (RulesDB controllerStr rules) goals = extractValidBindings $ prove' controllerStr rules 1 goals
-    where extractValidBindings xs = fmap (\x -> TruthList (truthVal x) $ filter (not . isBindingAuto) (truthList x)) $ filter (\x -> truthVal x /= (truthFetch controllerStr "disunity")) $ justs xs
---     where extractValidBindings xs = {-fmap (\x -> TruthList (truthVal x) $ filter (not . isBindingAuto) (truthList x)) $ filter (\x -> truthVal x /= (truthFetch controllerStr disunity)) $-} justs xs
+prove rulesDB goals = extractValidBindings $ prove' rulesDB 1 goals
+    where extractValidBindings xs = fmap (\x -> TruthList (truthVal x) $ filter (not . isBindingAuto) (truthList x)) $ filter (\x -> truthVal x /= (truthFetch (dbTruthController rulesDB) "disunity")) $ justs xs
 
-prove' :: String -> Rules -> Int -> Terms -> [Maybe Bindings]
-prove' controllerStr rules i goals = do
-    rule' <- decorateRules i rules
-    let (newBindings, newGoals) = branch controllerStr rule' goals
+prove' :: RulesDB -> Int -> Terms -> [Maybe Bindings]
+prove' rulesDB i goals = do
+    rule' <- decorateRules i (dbRules rulesDB)
+    let (newBindings, newGoals) = branch rulesDB rule' goals
     let answer = if newGoals == []
                     then [newBindings]
-                    else if maybeTruth newBindings == truthFetch controllerStr "disunity"
+                    else if maybeTruth newBindings == truthFetch (dbTruthController rulesDB) "disunity"
                             then [Nothing]
-                            else maybeCons newBindings (prove' controllerStr rules (i+1) newGoals)
+                            else maybeCons newBindings (prove' rulesDB (i+1) newGoals)
     answer
         where maybeTruth (Just (TruthList truth list)) = truth
 
-branch :: String -> Rule -> Terms -> (Maybe Bindings, Terms)
-branch controllerStr rule (goal:goals) = (newBindings, sub (unMaybe controllerStr newBindings) (newGoals++goals))
-    where Rule nextTerm body truthValue = rule
+branch :: RulesDB -> Rule -> Terms -> (Maybe Bindings, Terms)
+branch rulesDB rule (goal:goals) = (newBindings, sub (unMaybe (dbTruthController rulesDB) newBindings) (newGoals++goals))
+    where (Rule nextTerm body truthValue) = rule
           newGoals = body
-          newBindings = disunityToMaybe $ unifyTerms controllerStr nextTerm goal
+          newBindings = disunityToMaybe $ unifyTerms rulesDB truthValue nextTerm goal
 
-unifyTerms :: String -> Term -> Term -> Bindings
-unifyTerms controllerStr (CTerm _ []) (CTerm _ []) = TruthList (truthFetch controllerStr "defaultTruthValue") []
-unifyTerms controllerStr (CTerm _ []) (CTerm _ _)  = falseBindings controllerStr 
-unifyTerms controllerStr (CTerm _ _ ) (CTerm _ []) = falseBindings controllerStr 
-unifyTerms controllerStr (CTerm f1 (x:xs)) (CTerm f2 (y:ys))
-    | f1 /= f2  = falseBindings controllerStr 
-    | length xs /= length ys = falseBindings controllerStr 
+unifyTerms :: RulesDB -> TruthBox -> Term -> Term -> Bindings
+unifyTerms rulesDB baseTruth (CTerm x []) (CTerm y []) = 
+    if x==y
+        then TruthList baseTruth []
+        else error $ "unified non-same terms ?! : " ++ (show x) ++ " " ++ (show y)
+unifyTerms rulesDB baseTruth (CTerm _ []) (CTerm _ _ ) = falseBindings (dbTruthController rulesDB) 
+unifyTerms rulesDB baseTruth (CTerm _ _ ) (CTerm _ []) = falseBindings (dbTruthController rulesDB) 
+unifyTerms rulesDB baseTruth (CTerm f1 (x:xs)) (CTerm f2 (y:ys))
+    | f1 /= f2  = falseBindings (dbTruthController rulesDB) 
+    | length xs /= length ys = falseBindings (dbTruthController rulesDB) 
     | hasVar x  = 
-        let rest = unifyTerms controllerStr (subTerm (x,y) t1) (subTerm (x,y) t2) in
-            (TruthList (truthFetch controllerStr "truthOfInference") [(x,y)]) `truthListAppend` rest
+        let rest = unifyTerms rulesDB baseTruth (subTerm (x,y) t1) (subTerm (x,y) t2) in
+            (TruthList (truthFetch (dbTruthController rulesDB) "truthOfInference") [(x,y)]) `truthListAppend` rest
     | hasVar y  = 
-        let rest = unifyTerms controllerStr (subTerm (y,x) t1) (subTerm (y,x) t2) in
-            (TruthList (truthFetch controllerStr "truthOfInference") [(y,x)]) `truthListAppend` rest
-    | x == y    = unifyTerms controllerStr t1 t2
-    | otherwise = falseBindings controllerStr 
+        let rest = unifyTerms rulesDB baseTruth (subTerm (y,x) t1) (subTerm (y,x) t2) in
+            (TruthList (truthFetch (dbTruthController rulesDB) "truthOfInference") [(y,x)]) `truthListAppend` rest
+    | x == y    = unifyTerms rulesDB baseTruth t1 t2
+    | otherwise = falseBindings (dbTruthController rulesDB) 
     where
           t1 = CTerm f1 xs
           t2 = CTerm f2 ys
-unifyTerms controllerStr a1 a2 = error ( "Non-exhaustive blah: a1=" ++ (show a1) ++ " a2=" ++ (show a2))
+unifyTerms rulesDB baseTruth a1 a2 = error ( "Non-exhaustive blah: a1=" ++ (show a1) ++ " a2=" ++ (show a2))
+
+---------------------------------------
+-- RulesDB functions
+
+findRule :: RulesDB -> String -> Rule
+findRule (RulesDB controller []    ) ruleStr = error $ "Rule " ++ ruleStr ++ " not found!"
+findRule (RulesDB controller (x:xs)) ruleStr = if (ruleL x) == Atom ruleStr
+                                                then x
+                                                else findRule (RulesDB controller xs) ruleStr
 
 ---------------------------------------
 -- Minor functions for unification
@@ -94,20 +105,6 @@ falseBindings controlStr = TruthList (truthFetch controlStr "disunity") []
 isBindingAuto :: Binding -> Bool
 isBindingAuto (Var v, _) = '@' `elem` v
 isBindingAuto _          = False
-
----------------------------------------
--- Pretty print
-
-ppShowBinding :: Binding -> String
-ppShowBinding (Var v, Atom a) = v ++ "=" ++ a
-
-ppShowBindings :: Bindings -> String
-ppShowBindings x = show x
--- ppShowBindings (TruthList t [])     = ""
--- ppShowBindings (TruthList t x:xs)   = show x ++ "\n" ++ (ppShowBindings 
-
-   -- ppShowBindings xs = concat $ truthList $ fmap ((\ x -> x ++ "\n" ) . ppShowBinding) xs
--- ppShowBindings (t,xs) = t ++ "\n" ++ (concat $ map ((\ x -> x ++ "\n" ) . ppShowBinding) xs)
 
 ---------------------------------------
 -- Generic minor functions used by engine

@@ -16,7 +16,7 @@ prove :: RulesDB -> [Term] -> [Bindings]
 prove rulesDB goals = extractValidBindings $ prove' rulesDB 1 goals
     where extractValidBindings xs = fmap (\x -> TruthList (truthVal x) $ filter (not . isBindingAuto) (truthList x)) $ filter (\x -> truthVal x /= (truthFetch (dbTruthController rulesDB) "disunity")) $ justs xs
 
-prove' :: RulesDB -> Int -> Terms -> [Maybe Bindings]
+prove' :: RulesDB -> Int -> [Term] -> [Maybe Bindings]
 prove' rulesDB i goals = do
     rule' <- decorateRules i (dbRules rulesDB)
     let (newBindings, newGoals) = branch rulesDB rule' goals
@@ -28,7 +28,7 @@ prove' rulesDB i goals = do
     answer
         where maybeTruth (Just (TruthList truth list)) = truth
 
-branch :: RulesDB -> Rule -> Terms -> (Maybe Bindings, Terms)
+branch :: RulesDB -> Rule -> [Term] -> (Maybe Bindings, [Term])
 branch rulesDB rule (goal:goals) = (newBindings, sub (unMaybe (dbTruthController rulesDB) newBindings) (newGoals++goals))
     where (Rule nextTerm body truthValue) = rule
           newGoals = body
@@ -83,7 +83,7 @@ subTerm (var, atom) (Var v)
 subTerm _ (Atom a)                  = Atom a
 subTerm binding (CTerm func args)   = CTerm func $ map (subTerm binding) args
 
-decorateRules :: Int -> Rules -> Rules
+decorateRules :: Int -> [Rule] -> [Rule]
 decorateRules i rules = map (decorateRule i) rules
 
 decorateRule :: Int -> Rule -> Rule
@@ -99,7 +99,7 @@ hasVar (Var _)  = True
 hasVar (Atom _) = False
 hasVar term     = elem True $ map hasVar (args term)
 
-falseBindings :: String -> TruthList a
+falseBindings :: String -> TruthList
 falseBindings controlStr = TruthList (truthFetch controlStr "disunity") []
 
 isBindingAuto :: Binding -> Bool

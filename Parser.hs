@@ -77,10 +77,10 @@ parseRule controlStr = do
     spaces
     body <- option [] parseBody
     spaces
-    truthVal <-option (truthFetch controlStr "defaultTruthValue") parseTruthVal
+    truthVal <-option (truthFetch' controlStr "defaultTruthValue") parseTruthVal
     spaces
     char '.'
-    return $ Rule head body truthVal
+    return $ Rule head body $ LogicTracer truthVal [Rule head body truthVal]
         where parseBody = do
                   char ':'
                   char '-'

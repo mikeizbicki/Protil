@@ -14,7 +14,7 @@ import Parser
 
 prove :: RulesDB -> [Term] -> [Bindings]
 prove rulesDB goals = extractValidBindings $ prove' rulesDB 1 goals
-    where extractValidBindings xs = fmap (\x -> TruthList (truthVal x) $ filter (not . isBindingAuto) (truthList x)) $ filter (\x -> truthVal x /= (truthFetch (dbTruthController rulesDB) "disunity")) $ justs xs
+    where extractValidBindings xs = fmap (\x -> TruthList (truthVal x) $ filter (not . isBindingAuto) (truthList x)) $ filter (\x -> truthVal x /= (tracerFetch (dbTruthController rulesDB) "disunity")) $ justs xs
 
 prove' :: RulesDB -> Int -> [Term] -> [Maybe Bindings]
 prove' rulesDB i goals = do
@@ -22,7 +22,7 @@ prove' rulesDB i goals = do
     let (newBindings, newGoals) = branch rulesDB rule' goals
     let answer = if newGoals == []
                     then [newBindings]
-                    else if maybeTruth newBindings == truthFetch (dbTruthController rulesDB) "disunity"
+                    else if maybeTruth newBindings == tracerFetch (dbTruthController rulesDB) "disunity"
                             then [Nothing]
                             else maybeCons newBindings (prove' rulesDB (i+1) newGoals)
     answer
@@ -34,7 +34,7 @@ branch rulesDB rule (goal:goals) = (newBindings, sub (unMaybe (dbTruthController
           newGoals = body
           newBindings = disunityToMaybe $ unifyTerms rulesDB truthValue nextTerm goal
 
-unifyTerms :: RulesDB -> TruthBox -> Term -> Term -> Bindings
+unifyTerms :: RulesDB -> TracerBox -> Term -> Term -> Bindings
 unifyTerms rulesDB baseTruth (CTerm x []) (CTerm y []) = 
     if x==y
         then TruthList baseTruth []
@@ -46,10 +46,10 @@ unifyTerms rulesDB baseTruth (CTerm f1 (x:xs)) (CTerm f2 (y:ys))
     | length xs /= length ys = falseBindings (dbTruthController rulesDB) 
     | hasVar x  = 
         let rest = unifyTerms rulesDB baseTruth (subTerm (x,y) t1) (subTerm (x,y) t2) in
-            (TruthList (truthFetch (dbTruthController rulesDB) "truthOfInference") [(x,y)]) `truthListAppend` rest
+            (TruthList (tracerFetch (dbTruthController rulesDB) "truthOfInference") [(x,y)]) `truthListAppend` rest
     | hasVar y  = 
         let rest = unifyTerms rulesDB baseTruth (subTerm (y,x) t1) (subTerm (y,x) t2) in
-            (TruthList (truthFetch (dbTruthController rulesDB) "truthOfInference") [(y,x)]) `truthListAppend` rest
+            (TruthList (tracerFetch (dbTruthController rulesDB) "truthOfInference") [(y,x)]) `truthListAppend` rest
     | x == y    = unifyTerms rulesDB baseTruth t1 t2
     | otherwise = falseBindings (dbTruthController rulesDB) 
     where
@@ -100,7 +100,7 @@ hasVar (Atom _) = False
 hasVar term     = elem True $ map hasVar (args term)
 
 falseBindings :: String -> TruthList
-falseBindings controlStr = TruthList (truthFetch controlStr "disunity") []
+falseBindings controlStr = TruthList (tracerFetch controlStr "disunity") []
 
 isBindingAuto :: Binding -> Bool
 isBindingAuto (Var v, _) = '@' `elem` v

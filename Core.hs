@@ -10,7 +10,9 @@ import Parser
 
 -------------------------------------------------------------------------------
 -- Main solving functions
+--
 -- FIXME: make this code actually readable
+--        flowchart the logic
 
 prove :: RulesDB -> [Term] -> [Bindings]
 prove rulesDB goals = extractValidBindings $ prove' rulesDB 1 goals

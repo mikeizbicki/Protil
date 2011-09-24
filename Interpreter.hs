@@ -1,17 +1,14 @@
 module Interpreter 
-    ( pr, loadRules
+    ( repl, pr, loadRules
     ) where
 
 import System.IO
-import Control.OldException
--- import System.Console.Readline
+import System.Console.Haskeline
 
 import DataTypes
 import Core
 import Parser
 import Logic
-
--- import Truths.Boolean
 
 -- parsing interface
 
@@ -25,8 +22,6 @@ loadRules fileName = do
     str <- hGetContents handle
     return $ right $ parseText str
 
--- test = unity
-
 -- debug funcs
 
 right :: Show a => Either a b -> b
@@ -34,34 +29,25 @@ right (Right r) = r
 right (Left l) = error $ show l
 
 -- REPL loop
-
--- readEvalPrintLoop :: IO ()
--- readEvalPrintLoop = do
---     maybeLine <- readline "% "
---     case maybeLine of 
---          Nothing     -> return () -- EOF / control-d
---          Just "exit" -> return ()
---          Just line -> do addHistory line
---                         putStrLn $ "The user input: " ++ (show line)
---                         readEvalPrintLoop
-
-
--- repl :: Rules TruthBoolean -> IO () 
-repl :: RulesDB -> IO () 
-repl rulesDB = do
-    putStr "?- "
-    nextLine <- getLine
---     try $ putStrLn $ show $ pr rulesDB nextLine
---     handle (\x -> putStrLn $ show x) (listPrint $ pr rulesDB nextLine)
-    listPrint $ pr rulesDB nextLine
-    repl rulesDB
     
-listPrint :: Show a => [a] -> IO () -- FIXME: func doesn't fail on parse errors
+repl :: RulesDB -> IO ()
+repl rulesDB = runInputT defaultSettings loop
+    where 
+        loop :: InputT IO ()
+        loop = do
+            minput <- getInputLine "% "
+            case minput of
+                Nothing -> return ()
+                Just input -> do evalPrint rulesDB input
+                                 loop
+                                 
+evalPrint rulesDB input = listPrint $ pr rulesDB input --catch (listPrint $ pr rulesDB input) (putStrLn ("Caught " ++ show (e :: IOException))
+                                 
+listPrint :: Show a => [a] -> InputT IO ()
 listPrint [] = do return ()
 listPrint (x:xs) = do
-    putStrLn $ show x
+    outputStrLn $ show x
     listPrint xs
-    
     
 ---------------------------------------
 -- Pretty print
@@ -71,14 +57,5 @@ ppShowBinding (Var v, Atom a) = v ++ "=" ++ a
 
 ppShowBindings :: Bindings -> String
 ppShowBindings x = show x
--- ppShowBindings (TruthList t [])     = ""
--- ppShowBindings (TruthList t x:xs)   = show x ++ "\n" ++ (ppShowBindings 
-
--- ppShowBindings xs = concat $ truthList $ fmap ((\ x -> x ++ "\n" ) . ppShowBinding) xs
--- ppShowBindings (t,xs) = t ++ "\n" ++ (concat $ map ((\ x -> x ++ "\n" ) . ppShowBinding) xs)
 
     
-main = do
-    rulesDB <- loadRules "examples/family.pl"
-    repl rulesDB
---     readEvalPrintLoop

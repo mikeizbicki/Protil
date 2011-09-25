@@ -2,7 +2,7 @@ module DataTypes
     ( Term(Atom,Var,CTerm), functor, args
     , Rule(Rule), ruleL, ruleR, ruleTruth
     , RulesDB(RulesDB), dbTruthController, dbRules
-    , Binding, Bindings
+    , Binding
     , TruthList(TruthList), truthVal, truthList
     , truthListAppend
     
@@ -43,14 +43,13 @@ data Rule = Rule { ruleL :: Term, ruleR :: [Term], ruleTruth :: TracerBox }
     deriving (Eq)
     
 instance Show Rule where
-    show (Rule l r t) = show l ++ body ++ truth ++"."
+    show (Rule l r t) = show l ++ body ++ truth -- ++"."
         where body = if length r == 0
                         then ""
                         else ":-" ++ ppShowTerms r
               truth = "<-" ++ show t
 
 type Binding = (Term,Term)
-type Bindings = TruthList -- Binding
 
 data TruthList = TruthList { truthVal :: TracerBox, truthList :: [Binding]}
     deriving (Eq)
@@ -70,8 +69,7 @@ truthListAppend :: TruthList -> TruthList -> TruthList
 truthListAppend tl1@(TruthList t1 xs1) tl2@(TruthList t2 xs2) = TruthList (conjunctionTracer t1 t2) (xs1 ++ xs2)
 
 -------------------------------------------------------------------------------
---
--- Tracer datas
+-- TracerBox
 
 data TracerBox = TracerBox TruthBox [Rule]
     deriving (Eq)

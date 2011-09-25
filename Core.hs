@@ -2,11 +2,8 @@ module Core
     ( prove
     ) where
 
-import Data.Monoid
-
 import DataTypes
 import Logic
-import Parser
 
 -------------------------------------------------------------------------------
 -- Main solving functions
@@ -14,11 +11,11 @@ import Parser
 -- FIXME: make this code actually readable
 --        flowchart the logic
 
-prove :: RulesDB -> [Term] -> [Bindings]
+prove :: RulesDB -> [Term] -> [TruthList]
 prove rulesDB goals = extractValidBindings $ prove' rulesDB 1 goals
     where extractValidBindings xs = fmap (\x -> TruthList (truthVal x) $ filter (not . isBindingAuto) (truthList x)) $ filter (\x -> truthVal x /= (tracerFetch (dbTruthController rulesDB) "disunity")) $ justs xs
 
-prove' :: RulesDB -> Int -> [Term] -> [Maybe Bindings]
+prove' :: RulesDB -> Int -> [Term] -> [Maybe TruthList]
 prove' rulesDB i goals = do
     rule' <- decorateRules i (dbRules rulesDB)
     let (newBindings, newGoals) = branch rulesDB rule' goals
@@ -30,13 +27,13 @@ prove' rulesDB i goals = do
     answer
         where maybeTruth (Just (TruthList truth list)) = truth
 
-branch :: RulesDB -> Rule -> [Term] -> (Maybe Bindings, [Term])
+branch :: RulesDB -> Rule -> [Term] -> (Maybe TruthList, [Term])
 branch rulesDB rule (goal:goals) = (newBindings, sub (unMaybe (dbTruthController rulesDB) newBindings) (newGoals++goals))
     where (Rule nextTerm body truthValue) = rule
           newGoals = body
           newBindings = disunityToMaybe $ unifyTerms rulesDB truthValue nextTerm goal
 
-unifyTerms :: RulesDB -> TracerBox -> Term -> Term -> Bindings
+unifyTerms :: RulesDB -> TracerBox -> Term -> Term -> TruthList
 unifyTerms rulesDB baseTruth (CTerm x []) (CTerm y []) = 
     if x==y
         then TruthList baseTruth []
@@ -71,7 +68,7 @@ findRule (RulesDB controller (x:xs)) ruleStr = if (ruleL x) == Atom ruleStr
 ---------------------------------------
 -- Minor functions for unification
 
-sub :: Bindings -> [Term] -> [Term]
+sub :: TruthList -> [Term] -> [Term]
 sub (TruthList truth []) ts       = ts
 sub (TruthList truth (b:bs)) ts   = sub (TruthList truth bs) $ subTerms b ts
 
@@ -117,11 +114,11 @@ justs []            = []
 justs ((Just x):xs) = x:(justs xs)
 justs (Nothing:xs)  = justs xs
 
-unMaybe :: String -> Maybe Bindings -> Bindings
+unMaybe :: String -> Maybe TruthList -> TruthList
 unMaybe controllerStr Nothing     = falseBindings controllerStr
 unMaybe controllerStr (Just xs)   = xs
           
-maybeCons :: Maybe Bindings -> [Maybe Bindings] -> [Maybe Bindings]
+maybeCons :: Maybe TruthList -> [Maybe TruthList] -> [Maybe TruthList]
 maybeCons (Just x) []               = []
 maybeCons (Just x) ((Just y):ys)    = (Just (x `truthListAppend` y)):(maybeCons (Just x) ys)
 maybeCons (Just x) (Nothing:ys)     = Nothing:(maybeCons (Just x) ys)
@@ -131,6 +128,6 @@ eitherToMaybe :: Either a b -> Maybe b
 eitherToMaybe (Right b) = Just b
 eitherToMaybe (Left a)  = Nothing
                         
-disunityToMaybe :: Bindings -> Maybe Bindings
+disunityToMaybe :: TruthList -> Maybe TruthList
 -- disunityToMaybe (TruthList disunity xs) = Nothing
 disunityToMaybe x = Just x

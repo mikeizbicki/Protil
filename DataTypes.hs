@@ -1,18 +1,16 @@
 module DataTypes
     ( Term(Atom,Var,CTerm), functor, args
+    
     , Rule(Rule), ruleL, ruleR, ruleTruth
     , RulesDB(RulesDB), dbTruthController, dbRules
+    , emptyRulesDB
+    
     , Binding
     , TruthList(TruthList), truthVal, truthList
     , truthListAppend
     
     , TracerBox (TracerBox)
     , tracerFetch
-    
-    {-, truthFetch'
-    , parseTruthBox
-    , defaultTruth
-    , TruthBox(LogicTracer)-}
     ) where
 
 import Data.Monoid
@@ -22,6 +20,10 @@ import Logic
 
 -- This file contains all the datatypes that are not directly related to implementing
 -- specific truth controllers
+
+
+---------------------------------------
+-- Term
 
 data Term = Atom String
           | Var String
@@ -38,7 +40,12 @@ ppShowTerms [x]    = show x
 ppShowTerms (x:xs) = show x ++ "," ++ ppShowTerms xs
 ppShowTerms y      = "???" ++ show y ++ "???"
 
+---------------------------------------
+-- Rules
+
 data RulesDB = RulesDB { dbTruthController :: String, dbRules :: [Rule] }
+emptyRulesDB = RulesDB "" []
+    
 data Rule = Rule { ruleL :: Term, ruleR :: [Term], ruleTruth :: TracerBox }
     deriving (Eq)
     
@@ -49,26 +56,21 @@ instance Show Rule where
                         else ":-" ++ ppShowTerms r
               truth = "<-" ++ show t
 
+---------------------------------------
+-- TruthList
+
 type Binding = (Term,Term)
 
 data TruthList = TruthList { truthVal :: TracerBox, truthList :: [Binding]}
     deriving (Eq)
 
 instance Show TruthList where
--- instance (Show a) => Show (TruthList a) where
     show (TruthList truth list) = show truth ++ ": " ++ show list
-
--- instance Functor TruthList where
---     fmap f (TruthList truth list) = TruthList truth $ map f list
-
--- instance (TruthClass a) => Monoid (TruthList a b) where
---     mempty = TruthList defaultTruthValue []
---     mappend (TruthList t1 xs1) (TruthList t2 xs2) = TruthList (conjunction t1 t2) (xs1 ++ xs2)
 
 truthListAppend :: TruthList -> TruthList -> TruthList
 truthListAppend tl1@(TruthList t1 xs1) tl2@(TruthList t2 xs2) = TruthList (conjunctionTracer t1 t2) (xs1 ++ xs2)
 
--------------------------------------------------------------------------------
+---------------------------------------
 -- TracerBox
 
 data TracerBox = TracerBox TruthBox [Rule]

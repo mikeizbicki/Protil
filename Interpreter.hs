@@ -39,13 +39,11 @@ loadRules :: String -> IO RulesDB
 loadRules fileName = do
     handle <- openFile fileName ReadMode
     str <- hGetContents handle
-    return $ right $ parseText str
-
--- debug funcs
-
-right :: Show a => Either a b -> b
-right (Right r) = r
-right (Left l) = error $ "supid me" ++ show l
+    case parseText str of 
+         Left err -> do
+             putStrLn $ show err
+             return emptyRulesDB
+         Right rulesDB -> return rulesDB
 
 ---------------------------------------
 -- Pretty print
@@ -59,6 +57,9 @@ prettyPrint (Right (b:bs)) = do
 
 ppShowBindings :: TruthList -> String
 ppShowBindings x = ppShowBindings' (show $ getTruth x) (getTermPairs x) (getRules x)
+    where getTruth (TruthList (TracerBox tb _) _) = tb
+          getRules (TruthList (TracerBox _ rs) _) = rs
+          getTermPairs (TruthList _ p) = p
 
 ppShowBindings' :: String -> [Binding] -> [Rule] -> String
 ppShowBindings' truthStr []     rs = ""
@@ -74,12 +75,3 @@ ppShowBindingList xs = "[" ++ ppShowBindingList' xs ++ "]"
                                   
 ppShowBinding :: Binding -> String
 ppShowBinding (x,y) = show x ++ "=" ++ show y
-
-getTruth :: TruthList -> TruthBox
-getTruth (TruthList (TracerBox tb _) _) = tb
-
-getRules :: TruthList -> [Rule]
-getRules (TruthList (TracerBox _ rs) _) = rs
-
-getTermPairs :: TruthList -> [Binding]
-getTermPairs (TruthList _ p) = p
